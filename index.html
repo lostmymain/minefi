@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍓 PicoChat — чат на малинке</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            background: linear-gradient(135deg, #1a0010 0%, #2d001c 100%);
+            color: #ff69b4;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container{
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(45,0,28,0.8);
+            border: 2px solid #ff1493;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(255,20,147,0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1{
+            color: #ff1493;
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #ff1493;
+        }
+        .subtitle{
+            text-align: center;
+            color: #ff99cc;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .features{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature{
+            background: #1a0010;
+            border: 1px solid #ff69b4;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .feature:hover{
+            transform: translateY(-5px);
+            border-color: #ff1493;
+            box-shadow: 0 0 20px rgba(255,20,147,0.5);
+        }
+        .feature-emoji{
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .feature h3{
+            color: #ff1493;
+            margin-bottom: 10px;
+        }
+        .feature p{
+            color: #ffb6d9;
+            font-size: 14px;
+        }
+        .commands{
+            background: #1a0010;
+            border: 2px dashed #ffa500;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .commands h3{
+            color: #ffa500;
+            margin-bottom: 15px;
+        }
+        .command-item{
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #ffa500;
+            background: #0d0008;
+            font-family: monospace;
+        }
+        .code{
+            color: #00ff00;
+            font-weight: bold;
+        }
+        .button{
+            display: inline-block;
+            background: #ff1493;
+            color: #1a0010;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px #ff1493;
+        }
+        .button:hover{
+            background: #ff69b4;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px #ff1493;
+        }
+        .button-outline{
+            background: transparent;
+            border: 2px solid #ff1493;
+            color: #ff1493;
+            box-shadow: none;
+        }
+        .button-outline:hover{
+            background: #ff1493;
+            color: #1a0010;
+        }
+        .footer{
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 12px;
+        }
+        .screenshot{
+            width: 100%;
+            border-radius: 15px;
+            border: 2px solid #ff1493;
+            margin: 20px 0;
+        }
+        .online-badge{
+            display: inline-block;
+            background: #00ff00;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            🍓 PicoChat 
+            <span class="online-badge">ONLINE</span>
+        </h1>
+        <div class="subtitle">
+            Чат на Raspberry Pi Pico 2W • Работает без интернета • Только для своих
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="#" class="button">🍓 Подключиться</a>
+            <a href="https://github.com" class="button button-outline">📦 Исходный код</a>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-emoji">📡</div>
+                <h3>Свой WiFi</h3>
+                <p>Pico 2W создаёт точку доступа. Никакого интернета — только вы и чат!</p>
+            </div>
+            <div class="feature">
+                <div class="feature-emoji">🎨</div>
+                <h3>Цветные ники</h3>
+                <p>У каждого свой уникальный цвет на основе имени. Админы светятся золотом!</p>
+            </div>
+            <div class="feature">
+                <div class="feature-emoji">🎮</div>
+                <h3>Мини-игры</h3>
+                <p>Встроенные команды: /roll, /flip, /hug, /punch, /8ball</p>
+            </div>
+            <div class="feature">
+                <div class="feature-emoji">👑</div>
+                <h3>Админ-панель</h3>
+                <p>Кик, мут, очистка чата. Имя "admin" даёт полный контроль!</p>
+            </div>
+        </div>
+
+        <div class="commands">
+            <h3>🎯 Весёлые команды в чате:</h3>
+            <div class="command-item"><span class="code">/roll</span> — бросить кубик 🎲</div>
+            <div class="command-item"><span class="code">/flip</span> — подбросить монетку 🪙</div>
+            <div class="command-item"><span class="code">/hug @имя</span> — обнять кента 🤗</div>
+            <div class="command-item"><span class="code">/punch @имя</span> — дать леща 👊</div>
+            <div class="command-item"><span class="code">/8ball вопрос</span> — спросить шар судьбы 🎱</div>
+        </div>
+
+        <div style="background: #1a0010; border-radius: 15px; padding: 20px; margin: 20px 0;">
+            <h3 style="color: #ff1493; margin-bottom: 15px;">🚀 Как подключиться:</h3>
+            <ol style="color: #ffb6d9; line-height: 2; padding-left: 20px;">
+                <li>Подключись к WiFi сети <span style="color: #00ff00;">PicoChat</span></li>
+                <li>Пароль: <span style="color: #00ff00;">12345678</span></li>
+                <li>Открой браузер и перейди на <span style="color: #00ff00;">192.168.4.1</span></li>
+                <li>Настрой имя в ⚙️ Настройках</li>
+                <li>Общайся и угарай с кентами!</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #ff99cc; margin-bottom: 15px;">
+                💡 Работает на Raspberry Pi Pico 2W<br>
+                Написано на MicroPython • 100% Open Source
+            </p>
+            <p style="color: #666;">
+                Сделано с 🍓 для школьных посиделок
+            </p>
+        </div>
+
+        <div class="footer">
+            © 2024 PicoChat Project • Никаких серверов, только твоя малинка!
+        </div>
+    </div>
+</body>
+</html>
