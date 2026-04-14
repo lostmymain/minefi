@@ -1,575 +1,1440 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <meta name="theme-color" content="#1a0010">
-    <title>🍓 PicoChat — чат на Raspberry Pi Pico 2W</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{
-            background: linear-gradient(135deg, #1a0010 0%, #2d001c 100%);
-            color: #ff69b4;
-            font-family: 'Courier New', monospace;
-            min-height: 100vh;
-            padding: 10px;
-        }
-        .container{
-            max-width: 100%;
-            margin: 0 auto;
-            background: rgba(45,0,28,0.8);
-            border: 2px solid #ff1493;
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 0 30px rgba(255,20,147,0.3);
-            backdrop-filter: blur(10px);
-        }
-        h1{
-            color: #ff1493;
-            font-size: clamp(28px, 8vw, 42px);
-            text-align: center;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px #ff1493;
-            line-height: 1.2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .hero-phrase{
-            font-size: clamp(18px, 5vw, 28px);
-            text-align: center;
-            margin: 15px 0;
-            padding: 15px;
-            background: rgba(255,20,147,0.1);
-            border-left: 5px solid #ffd700;
-            border-right: 5px solid #ffd700;
-            border-radius: 10px;
-            animation: pulse 3s infinite;
-            font-weight: bold;
-        }
-        @keyframes pulse{
-            0%,100%{opacity:0.9}
-            50%{opacity:1;text-shadow:0 0 30px #ffd700}
-        }
-        .highlight{
-            color: #ffd700;
-            font-weight: bold;
-        }
-        .nav-menu{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin: 20px 0;
-            justify-content: center;
-        }
-        .nav-btn{
-            background: #1a0010;
-            border: 1px solid #ff1493;
-            color: #ff69b4;
-            padding: 10px 15px;
-            border-radius: 30px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            flex: 0 1 auto;
-        }
-        .nav-btn.active{
-            background: #ff1493;
-            color: #1a0010;
-            border-color: #ff1493;
-        }
-        .nav-btn:active{
-            transform: scale(0.95);
-        }
-        .section{
-            display: none;
-            animation: fadeIn 0.3s;
-        }
-        .section.active{
-            display: block;
-        }
-        @keyframes fadeIn{
-            from{opacity:0}
-            to{opacity:1}
-        }
-        .stats-grid{
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .stat-card{
-            background: #1a0010;
-            border: 1px solid #ff1493;
-            border-radius: 10px;
-            padding: 12px 5px;
-            text-align: center;
-        }
-        .stat-number{
-            font-size: clamp(24px, 8vw, 36px);
-            color: #ffd700;
-            font-weight: bold;
-        }
-        .stat-label{
-            font-size: 12px;
-            color: #ff99cc;
-            margin-top: 5px;
-        }
-        .features{
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 25px 0;
-        }
-        .feature{
-            background: #1a0010;
-            border: 1px solid #ff69b4;
-            border-radius: 15px;
-            padding: 15px 10px;
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        .feature:active{
-            transform: scale(0.95);
-            border-color: #ff1493;
-        }
-        .feature-emoji{
-            font-size: clamp(32px, 10vw, 48px);
-            margin-bottom: 8px;
-        }
-        .feature h3{
-            color: #ff1493;
-            margin-bottom: 8px;
-            font-size: clamp(14px, 4vw, 18px);
-        }
-        .feature p{
-            color: #ffb6d9;
-            font-size: clamp(11px, 3vw, 14px);
-            line-height: 1.3;
-        }
-        .marquee{
-            background: #1a0010;
-            border-top: 1px solid #ff1493;
-            border-bottom: 1px solid #ff1493;
-            padding: 8px 0;
-            margin: 15px 0;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .marquee-content{
-            display: inline-block;
-            animation: marquee 25s linear infinite;
-            color: #00ff00;
-        }
-        @keyframes marquee{
-            0%{transform:translateX(0%)}
-            100%{transform:translateX(-50%)}
-        }
-        .commands{
-            background: #1a0010;
-            border: 2px dashed #ffa500;
-            border-radius: 15px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .commands h3{
-            color: #ffa500;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-        .command-item{
-            padding: 8px;
-            margin: 5px 0;
-            border-left: 3px solid #ffa500;
-            background: #0d0008;
-            font-family: monospace;
-            font-size: 13px;
-        }
-        .code{
-            color: #00ff00;
-            font-weight: bold;
-        }
-        .button-group{
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .button{
-            display: block;
-            background: #ff1493;
-            color: #1a0010;
-            padding: 15px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 18px;
-            text-align: center;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 0 20px #ff1493;
-        }
-        .button:active{
-            background: #ff69b4;
-            transform: scale(0.98);
-        }
-        .button-outline{
-            background: transparent;
-            border: 2px solid #ff1493;
-            color: #ff1493;
-            box-shadow: none;
-        }
-        .temp-warning{
-            background: linear-gradient(90deg, #ff4500, #ffa500);
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .copy-btn{
-            background: #3d0026;
-            color: #ff69b4;
-            border: 1px solid #ff1493;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        .copy-btn:active{
-            background: #ff1493;
-            color: #1a0010;
-        }
-        .faq-item{
-            margin: 15px 0;
-            border-bottom: 1px solid #3d0026;
-            padding-bottom: 10px;
-        }
-        .faq-question{
-            color: #ff1493;
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 15px;
-        }
-        .faq-answer{
-            color: #ffb6d9;
-            font-size: 13px;
-        }
-        .tech-spec{
-            background: #0d0008;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-        .tech-spec h4{
-            color: #ffa500;
-            margin-bottom: 10px;
-        }
-        .tech-spec ul{
-            color: #ffb6d9;
-            padding-left: 20px;
-            font-size: 13px;
-        }
-        .tech-spec li{
-            margin: 5px 0;
-        }
-        .footer{
-            text-align: center;
-            margin-top: 30px;
-            color: #666;
-            font-size: 11px;
-            line-height: 1.5;
-        }
-        .toast{
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff1493;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
-        }
-        .toast.show{
-            opacity: 1;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PicoChat · национальный мессенджер</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #150a18 100%);
+      min-height: 100vh;
+      padding: 12px 8px 20px;
+      color: #ffffff;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 8px 0;
+    }
+
+    .logo-section {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ff6b9d, #ffb347);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .header-balance {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffd966;
+      margin-top: 2px;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 5px 10px 5px 14px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 107, 157, 0.2);
+      backdrop-filter: blur(20px);
+      cursor: pointer;
+    }
+
+    .user-badge span {
+      font-weight: 500;
+      font-size: 13px;
+      color: #e4e4e7;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ff6b9d, #ff3b9a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      font-size: 14px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.06), rgba(255, 179, 71, 0.04));
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 107, 157, 0.15);
+      backdrop-filter: blur(20px);
+    }
+
+    .hero h2 {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #fff, #ffb3d9, #ffb347);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      color: #a1a1aa;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffb347, #ffd966);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: #71717a;
+      text-transform: uppercase;
+    }
+
+    #onlineCount {
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+    }
+
+    .marquee {
+      background: rgba(0, 255, 100, 0.04);
+      border-radius: 12px;
+      padding: 8px 0;
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 255, 100, 0.12);
+    }
+
+    .marquee-content {
+      display: inline-block;
+      white-space: nowrap;
+      padding-left: 100%;
+      animation: marquee 11s linear infinite;
+      color: #00ff88;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      overflow-x: auto;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: none;
+      background: transparent;
+      color: #a1a1aa;
+      font-weight: 600;
+      font-size: 11px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 179, 71, 0.1));
+      color: #ffb3d9;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .cases-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 8px 14px;
+      color: #e4e4e7;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .category-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e4e4e7;
+    }
+
+    .cases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .case-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.3));
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .case-card:active {
+      transform: scale(0.98);
+    }
+
+    .case-card-emoji {
+      font-size: 36px;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .case-card-name {
+      font-weight: 700;
+      color: #e4e4e7;
+      text-align: center;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .case-card-price {
+      color: #ffb347;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .case-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .case-detail-info {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .case-detail-emoji {
+      font-size: 50px;
+      margin-bottom: 6px;
+    }
+
+    .case-detail-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: #e4e4e7;
+      margin-bottom: 3px;
+    }
+
+    .case-detail-stats {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .case-stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffb347;
+    }
+
+    .case-stat-label {
+      font-size: 9px;
+      color: #71717a;
+    }
+
+    .spinner-wrapper {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .spinner {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 16px;
+      height: 110px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 107, 157, 0.2);
+      position: relative;
+    }
+
+    .spinner::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, #ff6b9d, transparent);
+      z-index: 5;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 16px solid #ff6b9d;
+      filter: drop-shadow(0 0 12px #ff6b9d);
+      z-index: 10;
+    }
+
+    .reel {
+      display: flex;
+      gap: 8px;
+      padding: 14px 10px;
+      height: 100%;
+      align-items: center;
+    }
+
+    .reel-item {
+      min-width: 85px;
+      height: 78px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.3));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #e4e4e7;
+      flex-shrink: 0;
+    }
+
+    .spin-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff6b9d, #ff3b9a);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #991144, 0 0 25px rgba(255, 107, 157, 0.3);
+    }
+
+    .spin-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #991144, 0 0 25px rgba(255, 107, 157, 0.3);
+    }
+
+    .spin-btn:disabled {
+      opacity: 0.5;
+      transform: none;
+      box-shadow: 0 4px 0 #991144;
+    }
+
+    .win-message {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.12), rgba(255, 179, 71, 0.06));
+      border-radius: 14px;
+      color: #ffb3d9;
+      font-size: 13px;
+      text-align: center;
+      border: 1px solid rgba(255, 107, 157, 0.25);
+      font-weight: 600;
+    }
+
+    .win-message.hidden {
+      display: none;
+    }
+
+    .inventory-controls {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 7px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      color: #a1a1aa;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 179, 71, 0.1));
+      border-color: #ff6b9d;
+      color: #ffb3d9;
+    }
+
+    .bulk-sell-btn {
+      padding: 7px 14px;
+      background: linear-gradient(135deg, #ff6b9d, #ff3b9a);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-weight: 600;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: auto;
+      box-shadow: 0 3px 0 #991144;
+    }
+
+    .inventory-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .inventory-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.2));
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .inventory-item.selected {
+      border-color: #ff6b9d;
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.12), rgba(255, 179, 71, 0.05));
+    }
+
+    .item-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .item-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: #ff6b9d;
+    }
+
+    .item-emoji {
+      font-size: 24px;
+    }
+
+    .item-name {
+      font-weight: 700;
+      color: #e4e4e7;
+      font-size: 13px;
+    }
+
+    .item-price {
+      font-size: 9px;
+      color: #ffb347;
+      font-weight: 600;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .item-count {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffb347;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .sell-controls {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .sell-amount {
+      width: 42px;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: white;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .sell-btn {
+      padding: 5px 10px;
+      background: rgba(255, 107, 157, 0.15);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      border-radius: 10px;
+      color: #ff6b9d;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .donate-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .donate-tab {
+      flex: 1;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      color: #a1a1aa;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .donate-tab.active {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 179, 71, 0.1));
+      border-color: #ff6b9d;
+      color: #ffb3d9;
+    }
+
+    .donate-amount-selector {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .donate-amount-btn {
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      color: #e4e4e7;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .donate-amount-btn.active {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 179, 71, 0.1));
+      border-color: #ffb347;
+      color: #ffd966;
+    }
+
+    .donate-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .donate-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.3));
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .donate-card:active {
+      transform: scale(0.98);
+    }
+
+    .donate-icon {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .donate-name {
+      font-weight: 700;
+      color: #e4e4e7;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .donate-desc {
+      font-size: 9px;
+      color: #00ff88;
+    }
+
+    .donate-history {
+      margin-top: 14px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+    }
+
+    .history-item {
+      color: #a1a1aa;
+      font-size: 11px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .spec-table tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .spec-table td {
+      padding: 10px 0;
+      color: #a1a1aa;
+      font-size: 12px;
+    }
+
+    .spec-table td:last-child {
+      text-align: right;
+      color: #00ff88;
+      font-weight: 600;
+    }
+
+    .faq-item {
+      margin-bottom: 14px;
+    }
+
+    .faq-question {
+      font-weight: 700;
+      color: #e4e4e7;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .faq-answer {
+      color: #a1a1aa;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #e4e4e7;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 107, 157, 0.05));
+      border-radius: 14px;
+      padding: 14px 6px;
+      border: 1px solid rgba(255, 107, 157, 0.1);
+      text-align: center;
+    }
+
+    .feature-emoji {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .feature-title {
+      font-weight: 700;
+      color: #e4e4e7;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .feature-desc {
+      font-size: 10px;
+      color: #00ff88;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #18181b, #150a18);
+      border-radius: 24px;
+      padding: 22px;
+      width: 100%;
+      max-width: 320px;
+      border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, #fff, #ffb3d9);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: #ff6b9d;
+    }
+
+    .error-message {
+      color: #ff4444;
+      font-size: 11px;
+      margin-bottom: 10px;
+      min-height: 16px;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #ff6b9d, #ff3b9a);
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #991144;
+    }
+
+    .close-modal {
+      text-align: center;
+      margin-top: 16px;
+      color: #71717a;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .user-list {
+      margin-top: 14px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .user-item {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>
-            🍓 PicoChat 
-            <span style="font-size:14px;background:#ff4500;padding:3px 10px;border-radius:20px;color:white;">v2.0</span>
-        </h1>
-        
-        <div class="hero-phrase">
-            СТО? ДВЕСТИ? ДА ХОТЬ <span class="highlight">ТРИСТА</span> СООБЩЕНИЙ<br>
-            В НАШЕМ ПИКО ЧАТЕ!
-        </div>
 
-        <div class="nav-menu">
-            <button class="nav-btn active" data-section="home">🏠 Главная</button>
-            <button class="nav-btn" data-section="commands">🎮 Команды</button>
-            <button class="nav-btn" data-section="setup">📡 Подключение</button>
-            <button class="nav-btn" data-section="tech">⚙️ Техника</button>
-            <button class="nav-btn" data-section="faq">❓ FAQ</button>
-        </div>
-
-        <!-- ГЛАВНАЯ -->
-        <div id="home" class="section active">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">∞</div>
-                    <div class="stat-label">Сообщений</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">~45°C</div>
-                    <div class="stat-label">Процессор</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">10+</div>
-                    <div class="stat-label">Клиентов</div>
-                </div>
-            </div>
-
-            <div class="marquee">
-                <div class="marquee-content" id="marqueeText"></div>
-            </div>
-
-            <div class="features">
-                <div class="feature">
-                    <div class="feature-emoji">📡</div>
-                    <h3>Автономный</h3>
-                    <p>Работает как точка доступа WiFi — интернет не нужен!</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-emoji">🎨</div>
-                    <h3>Цветные ники</h3>
-                    <p>Уникальный цвет для каждого пользователя</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-emoji">🎮</div>
-                    <h3>Интерактив</h3>
-                    <p>Встроенные команды для общения и игр</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-emoji">👑</div>
-                    <h3>Модерация</h3>
-                    <p>Админ-панель с киком и очисткой чата</p>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button class="button" onclick="showToast('Подключись к WiFi PicoChat, пароль 12345678')">🍓 КАК ПОДКЛЮЧИТЬСЯ</button>
-                <a href="https://github.com/lostmymain/pikochat" class="button button-outline">📦 ИСХОДНЫЙ КОД</a>
-            </div>
-
-            <div class="temp-warning">
-                🔥 ВНИМАНИЕ: При активной работе плата греется до 45-50°C — это норма!
-            </div>
-        </div>
-
-        <!-- КОМАНДЫ -->
-        <div id="commands" class="section">
-            <div class="commands">
-                <h3>📋 ДОСТУПНЫЕ КОМАНДЫ</h3>
-                <div class="command-item"><span class="code">/roll</span> — бросить шестигранный кубик 🎲</div>
-                <div class="command-item"><span class="code">/flip</span> — подбросить монетку (орёл/решка) 🪙</div>
-                <div class="command-item"><span class="code">/hug @имя</span> — отправить объятие пользователю 🤗</div>
-                <div class="command-item"><span class="code">/punch @имя</span> — шуточный удар 👊</div>
-                <div class="command-item"><span class="code">/8ball вопрос</span> — магический шар предсказаний 🎱</div>
-                <div class="command-item"><span class="code">/help</span> — показать список команд</div>
-            </div>
-
-            <div style="background:#1a0010;border-radius:10px;padding:15px;margin:20px 0;">
-                <h4 style="color:#ffa500;margin-bottom:10px;">💡 Примеры использования:</h4>
-                <p style="color:#ffb6d9;font-size:13px;margin:5px 0;"><span class="code">/roll</span> — Бот: 🎲 Выпало число 4!</p>
-                <p style="color:#ffb6d9;font-size:13px;margin:5px 0;"><span class="code">/hug @Анна</span> — Бот: 🤗 крепко обнял(а) @Анна</p>
-                <p style="color:#ffb6d9;font-size:13px;margin:5px 0;"><span class="code">/8ball будет ли 5?</span> — Бот: 🎱 Можешь быть уверен!</p>
-            </div>
-        </div>
-
-        <!-- ПОДКЛЮЧЕНИЕ -->
-        <div id="setup" class="section">
-            <div style="background:#1a0010;border-radius:15px;padding:15px;margin:20px 0;">
-                <h3 style="color:#ff1493;margin-bottom:15px;">📡 ИНСТРУКЦИЯ ПО ПОДКЛЮЧЕНИЮ</h3>
-                <ol style="color:#ffb6d9;line-height:2;padding-left:20px;font-size:14px;">
-                    <li>Открой настройки WiFi на устройстве</li>
-                    <li>Найди сеть: <span style="color:#00ff00;">PicoChat</span></li>
-                    <li>Введи пароль: <span style="color:#00ff00;">12345678</span>
-                        <button class="copy-btn" onclick="copyToClipboard('12345678')">📋 Копировать</button>
-                    </li>
-                    <li>Открой браузер и перейди по адресу: 
-                        <span style="color:#00ff00;">192.168.4.1</span>
-                        <button class="copy-btn" onclick="copyToClipboard('192.168.4.1')">📋 Копировать</button>
-                    </li>
-                    <li>Настрой имя пользователя (кнопка ⚙️)</li>
-                    <li>Готово! Можно общаться!</li>
-                </ol>
-            </div>
-
-            <div style="background:#0d0008;border-radius:10px;padding:15px;">
-                <h4 style="color:#ffa500;margin-bottom:10px;">📱 Совместимость:</h4>
-                <p style="color:#ffb6d9;font-size:13px;">✔️ Android • ✔️ iOS • ✔️ Windows • ✔️ MacOS • ✔️ Linux</p>
-                <p style="color:#ffb6d9;font-size:13px;margin-top:10px;">Работает в любом современном браузере!</p>
-            </div>
-        </div>
-
-        <!-- ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ -->
-        <div id="tech" class="section">
-            <div class="tech-spec">
-                <h4>🖥️ АППАРАТНАЯ ЧАСТЬ</h4>
-                <ul>
-                    <li>Плата: Raspberry Pi Pico 2W</li>
-                    <li>Процессор: RP2040, 133 МГц</li>
-                    <li>Память: 264 КБ SRAM, 2 МБ Flash</li>
-                    <li>WiFi: 2.4 ГГц (CYW43439)</li>
-                    <li>Питание: 5V через microUSB</li>
-                </ul>
-            </div>
-
-            <div class="tech-spec">
-                <h4>📟 ПРОГРАММНАЯ ЧАСТЬ</h4>
-                <ul>
-                    <li>Язык: MicroPython</li>
-                    <li>Протокол: HTTP/1.1</li>
-                    <li>Веб-сервер: socket (нативный)</li>
-                    <li>Кодировка: UTF-8</li>
-                    <li>Макс. сообщений: 50 в истории</li>
-                </ul>
-            </div>
-
-            <div class="tech-spec">
-                <h4>🌡️ ОСОБЕННОСТИ</h4>
-                <ul>
-                    <li>При активной работе плата греется до 45-50°C</li>
-                    <li>Рекомендуется использовать радиатор</li>
-                    <li>При перегреве возможны сбои WiFi</li>
-                    <li>Оптимально до 10 одновременных клиентов</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- FAQ -->
-        <div id="faq" class="section">
-            <div class="faq-item">
-                <div class="faq-question">❓ Зачем этот чат?</div>
-                <div class="faq-answer">Для общения без интернета в пределах одного помещения. Идеально для школы, лагеря, поезда.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">❓ На сколько хватает платы?</div>
-                <div class="faq-answer">От пауэрбанка 10000 мАч работает 8-10 часов непрерывно.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">❓ Можно ли взломать?</div>
-                <div class="faq-answer">Чат изолирован от интернета. Взломать можно только если знать пароль от WiFi.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">❓ Сохраняются ли сообщения?</div>
-                <div class="faq-answer">Только в оперативной памяти. При выключении всё стирается.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">❓ Как стать админом?</div>
-                <div class="faq-answer">Установите имя "admin" — получите доступ к панели модерации.</div>
-            </div>
-        </div>
-
-        <div class="footer">
-            © 2024 PicoChat Project • Open Source • MIT License<br>
-            Сделано с 🍓 на Raspberry Pi Pico 2W<br>
-            <span style="color:#ffa500;">Плата греется — зато душа радуется!</span>
-        </div>
+<div class="app">
+  <div class="header">
+    <div class="logo-section">
+      <div class="logo">🍓 PicoChat</div>
+      <div class="header-balance" id="headerBalance">🪙 1000</div>
     </div>
+    <div class="user-badge" onclick="openLoginModal()">
+      <span id="displayName">Гость</span>
+      <div class="avatar" id="userAvatar">👤</div>
+    </div>
+  </div>
 
-    <div class="toast" id="toast">Скопировано!</div>
+  <div class="hero">
+    <h2>НАЦИОНАЛЬНЫЙ<br>МЕССЕНДЖЕР</h2>
+    <p>работает пока плата не взорвалась к херам</p>
+    <div class="stats">
+      <div class="stat-item"><span class="stat-value">∞</span><span class="stat-label">сообщений</span></div>
+      <div class="stat-item"><span class="stat-value">~64°</span><span class="stat-label">пожар</span></div>
+      <div class="stat-item"><span class="stat-value" id="onlineCount">94,127</span><span class="stat-label">онлайн</span></div>
+    </div>
+  </div>
 
-    <script>
-        // Меню навигации
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', function(){
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                
-                this.classList.add('active');
-                const sectionId = this.dataset.section;
-                document.getElementById(sectionId).classList.add('active');
-            });
+  <div class="marquee">
+    <div class="marquee-content">
+      🔥 ПЛАТА ВЫДЕРЖИТ ЕЩЁ 10 ЧЕЛОВЕК • ЛОВИТ В ЧЁРНОЙ ДЫРЕ • АДМИН В ЗАПОЕ — СЕРВЕР РАБОТАЕТ • ДЕРЖИТСЯ НА СКОТЧЕ •
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" data-section="home">🏠 Главная</button>
+    <button class="nav-btn" data-section="cases">🎁 Кейсы</button>
+    <button class="nav-btn" data-section="inventory">🍇 Инвентарь</button>
+    <button class="nav-btn" data-section="specs">📊 Хар-ки</button>
+    <button class="nav-btn" data-section="faq">❓ FAQ</button>
+    <button class="nav-btn" data-section="donate">💎 Донат</button>
+  </div>
+
+  <div id="home" class="section active">
+    <div class="feature-grid">
+      <div class="feature-card"><div class="feature-emoji">📡</div><div class="feature-title">Сигнал везде</div><div class="feature-desc">даже в бункере</div></div>
+      <div class="feature-card"><div class="feature-emoji">⚡</div><div class="feature-title">Мощность</div><div class="feature-desc">можно кипятить чай</div></div>
+      <div class="feature-card"><div class="feature-emoji">🔒</div><div class="feature-title">Шифрование</div><div class="feature-desc">никто не взломает</div></div>
+      <div class="feature-card"><div class="feature-emoji">💀</div><div class="feature-title">Надёжность</div><div class="feature-desc">держится на скотче</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Технические детали</div>
+      <table class="spec-table">
+        <tr><td>Процессор</td><td>ESP32-S3 (2 ядра)</td></tr>
+        <tr><td>Память</td><td>512 КБ (хватает)</td></tr>
+        <tr><td>WiFi</td><td>ловит из подвала</td></tr>
+        <tr><td>Статус</td><td>горит но работает</td></tr>
+      </table>
+    </div>
+    <button class="spin-btn" onclick="showWifiInfo()">🔌 WiFi: PicoChat_5G // 12345678</button>
+  </div>
+
+  <div id="cases" class="section">
+    <div id="casesListView">
+      <div class="cases-header"><div class="category-title">🎁 Все кейсы</div></div>
+      <div class="cases-grid" id="casesGrid"></div>
+    </div>
+    
+    <div id="caseDetailView" style="display:none;">
+      <div class="case-detail-header">
+        <button class="back-btn" onclick="backToCasesList()">←</button>
+        <div class="category-title" id="detailCategoryTitle">Кейс</div>
+      </div>
+      <div id="caseDetailContent"></div>
+    </div>
+  </div>
+
+  <div id="inventory" class="section">
+    <div class="inventory-controls">
+      <button class="filter-btn active" data-sort="default">📋 Все</button>
+      <button class="filter-btn" data-sort="cheap">⬆️ Дешёвые</button>
+      <button class="filter-btn" data-sort="expensive">⬇️ Дорогие</button>
+      <button class="bulk-sell-btn" onclick="sellSelected()">💰 Продать</button>
+    </div>
+    <div class="inventory-grid" id="inventoryList"></div>
+  </div>
+
+  <div id="specs" class="section">
+    <div class="card"><div class="card-title">🖥️ Характеристики сервера</div>
+      <table class="spec-table">
+        <tr><td>Процессор</td><td>ESP32-S3</td></tr>
+        <tr><td>ОЗУ</td><td>512 КБ SRAM</td></tr>
+        <tr><td>WiFi</td><td>802.11 b/g/n</td></tr>
+        <tr><td>Температура</td><td>~64°C</td></tr>
+        <tr><td>Аптайм</td><td>пока не выдернут</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div id="faq" class="section">
+    <div class="card"><div class="card-title">❓ Часто задаваемые вопросы</div>
+      <div class="faq-item"><div class="faq-question">Как подключиться?</div><div class="faq-answer">WiFi: PicoChat_5G, пароль: 12345678</div></div>
+      <div class="faq-item"><div class="faq-question">Почему греется?</div><div class="faq-answer">Плата работает на пределе. Это норма.</div></div>
+      <div class="faq-item"><div class="faq-question">Что делать если лагает?</div><div class="faq-answer">Подуй на плату. Помогает.</div></div>
+    </div>
+  </div>
+
+  <div id="donate" class="section">
+    <div class="donate-tabs">
+      <div class="donate-tab active" data-donate-tab="donate">💎 Донат</div>
+      <div class="donate-tab" data-donate-tab="charity">🎗️ Благотворительность</div>
+    </div>
+    
+    <div id="donateContent">
+      <div class="card"><div class="card-title">💎 Выбери сумму</div>
+        <div class="donate-amount-selector" id="donateAmounts"></div>
+        <div class="donate-options" id="donateMethods"></div>
+        <div class="donate-history" id="donateHistory"></div>
+        <p style="color: #00ff88; text-align: center; margin-top: 10px; font-size: 10px;">*донат виртуальный, деньги не списываются</p>
+      </div>
+    </div>
+    
+    <div id="charityContent" style="display:none;">
+      <div class="card"><div class="card-title">🎗️ Благотворительность</div>
+        <div class="donate-amount-selector" id="charityAmounts"></div>
+        <div class="donate-options" id="charityMethods"></div>
+        <p style="color: #ffb347; text-align: center; margin: 12px 0;">❤️ Помоги тем, у кого нет даже PicoChat</p>
+        <div class="donate-history" id="charityHistory"></div>
+        <p style="color: #00ff88; text-align: center; margin-top: 10px; font-size: 10px;">*100% уходит на развитие (админу на пиво)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="loginModal">
+  <div class="modal-content">
+    <div class="modal-title">Вход в PicoChat</div>
+    <input type="text" class="input-field" id="usernameInput" placeholder="Логин" autocomplete="off">
+    <input type="password" class="input-field" id="passwordInput" placeholder="Пароль" autocomplete="off">
+    <div class="error-message" id="loginError"></div>
+    <button class="modal-btn" onclick="login()">Войти / Создать</button>
+    <div style="margin: 14px 0; color: #52525b; text-align: center; font-size: 11px;">ИЛИ ВЫБЕРИ</div>
+    <div class="user-list" id="userList"></div>
+    <div class="close-modal" onclick="closeLoginModal()">Закрыть</div>
+  </div>
+</div>
+
+<script>
+  "use strict";
+
+  // Функция для получения случайного дропа с правильным распределением
+  function getRandomDrop(min, max) {
+    const rand = Math.random() * 100;
+    let drop;
+    
+    if (rand < 40) { // 40% шанс - 1 ягода (убыток)
+      drop = 1;
+    } else if (rand < 65) { // 25% шанс - 2 ягоды (небольшой убыток)
+      drop = 2;
+    } else if (rand < 85) { // 20% шанс - 3 ягоды (почти ноль)
+      drop = 3;
+    } else if (rand < 95) { // 10% шанс - 4 ягоды (небольшой профит)
+      drop = 4;
+    } else if (rand < 99) { // 4% шанс - 5 ягод (хороший профит)
+      drop = 5;
+    } else { // 1% шанс - 6-8 ягод (джекпот)
+      drop = Math.floor(Math.random() * 3) + 6; // 6-8
+    }
+    
+    return drop;
+  }
+
+  const CASE_CATEGORIES = {
+    berries: '🍓 Ягоды', fruits: '🍎 Фрукты', exotic: '🥝 Экзотика',
+    legendary: '👑 Легенды', cursed: '💀 Проклятые', vegetables: '🥕 Овощи'
+  };
+
+  const generateCases = () => {
+    const cases = [];
+    const names = {
+      berries: ['Strawberry','Blueberry','Raspberry','Blackberry','Cranberry','Goji'],
+      fruits: ['Apple','Banana','Orange','Peach','Mango','Watermelon'],
+      exotic: ['Dragonfruit','Durian','Lychee','Rambutan','Jackfruit','Mangosteen'],
+      legendary: ['Goldenberry','Diamond','Moonberry','Starfruit','Voidberry','Soulfruit'],
+      cursed: ['Cursed','Bloodberry','Nightshade','Witchfruit','Demongrape','Shadow'],
+      vegetables: ['Carrot','Potato','Tomato','Cucumber','Broccoli','Pepper']
+    };
+    const emojis = {
+      berries: ['🍓','🫐','🍇','🖤','🍒','🔴'],
+      fruits: ['🍎','🍌','🍊','🍑','🥭','🍉'],
+      exotic: ['🐉','🤢','🧊','🦔','🎃','👸'],
+      legendary: ['✨','💎','🌙','⭐','🕳️','👻'],
+      cursed: ['👁️','🩸','🌑','🧙','😈','🌫️'],
+      vegetables: ['🥕','🥔','🍅','🥒','🥦','🌶️']
+    };
+    
+    Object.entries(CASE_CATEGORIES).forEach(([cat, catName]) => {
+      for(let i = 0; i < 6; i++) {
+        const cost = Math.floor(Math.random() * 200) + 50; // 50-250 монет
+        cases.push({
+          id: `${cat}_${i}`,
+          name: names[cat][i],
+          emoji: emojis[cat][i],
+          category: cat,
+          categoryName: catName,
+          cost: cost,
+          berryPrice: Math.floor(cost * 0.4) // цена ягоды ~40% от стоимости кейса
         });
+      }
+    });
+    return cases;
+  };
 
-        // Бегущая строка (бесконечная, медленная)
-        const phrases = [
-            'ПЛАТА ГРЕЕТСЯ — ЧАТ РАБОТАЕТ',
-            'ПОДКЛЮЧАЙСЯ К PicoChat',
-            'ПАРОЛЬ: 12345678',
-            'IP: 192.168.4.1',
-            'АДМИН ВСЕГДА НА СВЯЗИ',
-            'RASPBERRY PI PICO 2W',
-            'ОТКРЫТЫЙ ИСХОДНЫЙ КОД'
-        ];
-        
-        const marquee = document.getElementById('marqueeText');
-        if(marquee){
-            // Дублируем для бесконечности
-            const content = phrases.map(p => '🔥 ' + p + ' 🔥').join('  •  ');
-            marquee.innerHTML = content + '  •  ' + content;
-        }
+  const CASES = generateCases();
+  const BERRY_PRICES = {};
+  CASES.forEach(c => { BERRY_PRICES[c.id] = c.berryPrice; });
 
-        // Копирование в буфер обмена
-        function copyToClipboard(text){
-            if(navigator.clipboard && navigator.clipboard.writeText){
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast('Скопировано: ' + text);
-                }).catch(() => {
-                    fallbackCopy(text);
-                });
-            }else{
-                fallbackCopy(text);
-            }
-        }
+  const DONATE_METHODS = [
+    {id:'pikopay',name:'PikoPay',icon:'💳',multiplier:1},
+    {id:'spikob',name:'SpikoB',icon:'🏦',multiplier:1.15},
+    {id:'visapiko',name:'VisaPiko',icon:'💎',multiplier:1.3}
+  ];
 
-        function fallbackCopy(text){
-            const input = document.createElement('textarea');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            showToast('Скопировано: ' + text);
-        }
+  const CHARITY_METHODS = [
+    {id:'help_children',name:'Детям',icon:'👶',message:'Спасибо! Дети получили PicoChat'},
+    {id:'help_animals',name:'Животным',icon:'🐕',message:'Мяу! Животные благодарят!'},
+    {id:'help_admin',name:'Админу',icon:'🍺',message:'Админ купил пиво. Сервер работает!'}
+  ];
 
-        function showToast(msg){
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
-        }
+  const DB = {
+    users: JSON.parse(localStorage.getItem('pico_final_v5') || '{}'),
+    passwords: JSON.parse(localStorage.getItem('pico_pass_v5') || '{}'),
+    current: localStorage.getItem('pico_curr_v5') || null,
+    save(){ localStorage.setItem('pico_final_v5', JSON.stringify(this.users)); localStorage.setItem('pico_pass_v5', JSON.stringify(this.passwords)); localStorage.setItem('pico_curr_v5', this.current); },
+    create(u,p){ if(this.users[u]) return {s:false,e:'Есть такой'}; if(u.length<2) return {s:false,e:'Короткий логин'}; if(p.length<3) return {s:false,e:'Короткий пароль'}; this.users[u]={coins:1000,berries:{},donateHistory:[],charityHistory:[]}; this.passwords[u]=p; this.save(); return {s:true}; },
+    check(u,p){ return this.passwords[u]===p; }, get(u){ return this.users[u]; }, update(u,d){ this.users[u]={...this.users[u],...d}; this.save(); },
+    all(){ return Object.keys(this.users).sort(); }
+  };
 
-        // Экспорт для onclick
-        window.copyToClipboard = copyToClipboard;
-        window.showToast = showToast;
+  let state = {
+    username: DB.current || 'Гость', coins: 1000, berries: {}, currentCase: null,
+    inventorySort: 'default', isSpinning: false, selectedItems: new Set(),
+    donateAmount: 100, donateHistory: [], charityHistory: [], donateTab: 'donate'
+  };
 
-        // Анимация при тапе
-        document.querySelectorAll('.feature, .nav-btn, .button').forEach(el => {
-            el.addEventListener('touchstart', function(){
-                this.style.transform = 'scale(0.95)';
-            });
-            el.addEventListener('touchend', function(){
-                this.style.transform = 'scale(1)';
-            });
-        });
-    </script>
+  function updateHeaderBalance() {
+    document.getElementById('headerBalance').textContent = `🪙 ${state.coins}`;
+  }
+
+  function loadUserData(){
+    if(state.username!=='Гость'){ 
+      const d=DB.get(state.username); 
+      if(d){ 
+        state.coins=d.coins; 
+        state.berries=d.berries||{}; 
+        state.donateHistory=d.donateHistory||[];
+        state.charityHistory=d.charityHistory||[];
+      } 
+    }
+    updateUI();
+    updateHeaderBalance();
+  }
+
+  function updateUI(){
+    document.getElementById('displayName').textContent=state.username;
+    document.getElementById('userAvatar').textContent=state.username[0]?.toUpperCase()||'👤';
+    updateHeaderBalance();
+  }
+
+  function saveCurrentUser(){ 
+    if(state.username!=='Гость') DB.update(state.username,{
+      coins:state.coins, berries:state.berries, 
+      donateHistory:state.donateHistory, charityHistory:state.charityHistory
+    }); 
+  }
+
+  document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    b.classList.add('active'); 
+    document.getElementById(b.dataset.section).classList.add('active');
+    if(b.dataset.section==='cases') renderCasesList();
+    if(b.dataset.section==='inventory') renderInventory();
+    if(b.dataset.section==='donate') renderDonatePage();
+  }));
+
+  document.querySelectorAll('[data-donate-tab]').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('[data-donate-tab]').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    state.donateTab = t.dataset.donateTab;
+    document.getElementById('donateContent').style.display = state.donateTab === 'donate' ? 'block' : 'none';
+    document.getElementById('charityContent').style.display = state.donateTab === 'charity' ? 'block' : 'none';
+    if(state.donateTab === 'donate') renderDonatePage();
+    else renderCharityPage();
+  }));
+
+  function renderCasesList() {
+    document.getElementById('casesListView').style.display = 'block';
+    document.getElementById('caseDetailView').style.display = 'none';
+    
+    const grid = document.getElementById('casesGrid');
+    const casesByCategory = {};
+    CASES.forEach(c => {
+      if(!casesByCategory[c.category]) casesByCategory[c.category] = [];
+      casesByCategory[c.category].push(c);
+    });
+    
+    let html = '';
+    Object.entries(casesByCategory).forEach(([cat, cases]) => {
+      html += `<div style="grid-column:1/-1;margin:6px 0 3px;color:#a1a1aa;font-size:13px;font-weight:600;">${CASE_CATEGORIES[cat]}</div>`;
+      cases.forEach(c => {
+        html += `<div class="case-card" onclick="openCase('${c.id}')">
+          <div class="case-card-emoji">${c.emoji}</div>
+          <div class="case-card-name">${c.name}</div>
+          <div class="case-card-price">${c.cost} 🪙</div>
+        </div>`;
+      });
+    });
+    grid.innerHTML = html;
+  }
+
+  window.openCase = function(caseId) {
+    if(state.username === 'Гость') {
+      openLoginModal();
+      return;
+    }
+    state.currentCase = CASES.find(c => c.id === caseId);
+    document.getElementById('casesListView').style.display = 'none';
+    document.getElementById('caseDetailView').style.display = 'block';
+    
+    const c = state.currentCase;
+    document.getElementById('detailCategoryTitle').textContent = c.name;
+    
+    document.getElementById('caseDetailContent').innerHTML = `
+      <div class="case-detail-info">
+        <div class="case-detail-emoji">${c.emoji}</div>
+        <div class="case-detail-name">${c.name}</div>
+        <div class="case-detail-stats">
+          <div class="case-stat"><div class="case-stat-value">${c.cost}</div><div class="case-stat-label">Стоимость</div></div>
+          <div class="case-stat"><div class="case-stat-value">${c.berryPrice}</div><div class="case-stat-label">Цена ягоды</div></div>
+        </div>
+      </div>
+      <div class="spinner-wrapper">
+        <div class="pointer"></div>
+        <div class="spinner"><div class="reel" id="reel"></div></div>
+      </div>
+      <button class="spin-btn" id="spinButton" onclick="spinCase()">🎰 Крутить (${c.cost} 🪙)</button>
+      <div id="winMessage" class="win-message hidden"></div>
+    `;
+    
+    buildReel();
+  };
+
+  window.backToCasesList = function() {
+    document.getElementById('casesListView').style.display = 'block';
+    document.getElementById('caseDetailView').style.display = 'none';
+    updateUI();
+  };
+
+  function buildReel(){
+    const r = document.getElementById('reel');
+    if(!r) return;
+    const c = state.currentCase;
+    const items = [];
+    for(let i = 0; i < 40; i++) {
+      const drop = getRandomDrop();
+      items.push({val: drop, emoji: c.emoji});
+    }
+    
+    r.innerHTML = items.map(item => 
+      `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`
+    ).join('');
+    r.style.transform = 'translateX(0)';
+    r.style.transition = 'none';
+  }
+
+  function showWinMessage(text){
+    const w = document.getElementById('winMessage');
+    if(!w) return;
+    w.textContent = text; 
+    w.classList.remove('hidden');
+    setTimeout(() => w.classList.add('hidden'), 3000);
+  }
+
+  function showWifiInfo(){ 
+    showWinMessage('📶 WiFi: PicoChat_5G | Пароль: 12345678');
+  }
+
+  window.spinCase = function(){
+    if(state.username === 'Гость') { openLoginModal(); return; }
+    if(state.isSpinning) return;
+    
+    const c = state.currentCase;
+    if(state.coins < c.cost) { showWinMessage('❌ Недостаточно монет'); return; }
+    
+    state.isSpinning = true;
+    state.coins -= c.cost;
+    saveCurrentUser();
+    updateUI();
+    
+    const r = document.getElementById('reel');
+    const items = [];
+    for(let i = 0; i < 40; i++) {
+      const drop = getRandomDrop();
+      items.push({val: drop, emoji: c.emoji});
+    }
+    r.innerHTML = items.map(item => 
+      `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`
+    ).join('');
+    
+    const itemWidth = 93;
+    const steps = Math.floor(Math.random() * 18) + 20;
+    const offset = steps * itemWidth + itemWidth / 2;
+    
+    r.style.transition = 'transform 2.5s cubic-bezier(0.2,0.8,0.3,1)';
+    r.style.transform = `translateX(-${offset}px)`;
+    
+    setTimeout(() => {
+      const items = document.querySelectorAll('.reel-item');
+      const spinner = document.querySelector('.spinner');
+      const centerX = spinner.getBoundingClientRect().left + spinner.offsetWidth / 2;
+      
+      let winner = items[0];
+      let minDist = Infinity;
+      
+      items.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const itemCenter = rect.left + rect.width / 2;
+        const dist = Math.abs(centerX - itemCenter);
+        if(dist < minDist) { minDist = dist; winner = item; }
+      });
+      
+      const winAmount = parseInt(winner.dataset.value);
+      state.berries[state.currentCase.id] = (state.berries[state.currentCase.id] || 0) + winAmount;
+      saveCurrentUser();
+      updateUI();
+      
+      const profit = winAmount * c.berryPrice - c.cost;
+      
+      showWinMessage(`Выпало ${winAmount} ${c.emoji} | ${profit >= 0 ? '+' : ''}${profit} 🪙`);
+      
+      state.isSpinning = false;
+      r.style.transition = 'none';
+      setTimeout(() => r.style.transition = '', 50);
+    }, 2600);
+  };
+
+  function renderInventory(){
+    const cont = document.getElementById('inventoryList');
+    let items = Object.entries(state.berries).filter(([_,c]) => c > 0).map(([k,c]) => {
+      const caseData = CASES.find(cs => cs.id === k) || {name: k, emoji: '📦', berryPrice: 10};
+      return {key: k, count: c, name: caseData.name, emoji: caseData.emoji, price: caseData.berryPrice};
+    });
+    
+    if(state.inventorySort === 'cheap') items.sort((a,b) => a.price - b.price);
+    if(state.inventorySort === 'expensive') items.sort((a,b) => b.price - a.price);
+    
+    if(!items.length) { cont.innerHTML = '<div class="card" style="text-align:center;">Инвентарь пуст</div>'; return; }
+    
+    cont.innerHTML = items.map(i => `<div class="inventory-item ${state.selectedItems.has(i.key)?'selected':''}">
+      <div class="item-info"><input type="checkbox" class="item-checkbox" ${state.selectedItems.has(i.key)?'checked':''} onchange="toggleSelect('${i.key}')"><div class="item-emoji">${i.emoji}</div><div><div class="item-name">${i.name}</div><div class="item-price">${i.price}🪙/шт</div></div></div>
+      <div class="item-actions"><span class="item-count">${i.count}</span><div class="sell-controls"><input type="number" class="sell-amount" id="sell-${i.key}" value="1" min="1" max="${i.count}"><button class="sell-btn" onclick="sellItem('${i.key}')">Продать</button></div></div>
+    </div>`).join('');
+  }
+
+  window.toggleSelect = function(k){ state.selectedItems.has(k) ? state.selectedItems.delete(k) : state.selectedItems.add(k); renderInventory(); };
+  window.sellItem = function(k){
+    const inp = document.getElementById(`sell-${k}`); 
+    let a = parseInt(inp?.value) || 1; 
+    a = Math.min(a, state.berries[k] || 0); 
+    if(a <= 0) return;
+    const p = BERRY_PRICES[k] || 10; 
+    state.berries[k] -= a; 
+    state.coins += a * p;
+    if(state.berries[k] <= 0) { delete state.berries[k]; state.selectedItems.delete(k); }
+    saveCurrentUser(); 
+    updateUI(); 
+    renderInventory(); 
+    showWinMessage(`Продано ${a} за ${a * p} 🪙`);
+  };
+  
+  window.sellSelected = function(){
+    if(!state.selectedItems.size) { showWinMessage('Выбери ягоды'); return; }
+    let t = 0; 
+    state.selectedItems.forEach(k => { const c = state.berries[k] || 0, p = BERRY_PRICES[k] || 10; t += c * p; delete state.berries[k]; });
+    state.coins += t; 
+    state.selectedItems.clear(); 
+    saveCurrentUser(); 
+    updateUI(); 
+    renderInventory(); 
+    showWinMessage(`Продано всё за ${t} 🪙`);
+  };
+
+  document.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-sort]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); 
+    state.inventorySort = b.dataset.sort; 
+    renderInventory();
+  }));
+
+  function renderDonatePage(){
+    const amounts = [50,100,250,500,1000,2500,5000];
+    document.getElementById('donateAmounts').innerHTML = amounts.map(a => 
+      `<button class="donate-amount-btn ${state.donateAmount===a?'active':''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
+    ).join('');
+    
+    document.getElementById('donateMethods').innerHTML = DONATE_METHODS.map(m => 
+      `<div class="donate-card" onclick="donate('${m.id}')"><div class="donate-icon">${m.icon}</div><div class="donate-name">${m.name}</div><div class="donate-desc">+${Math.floor(state.donateAmount*m.multiplier)} 🪙</div></div>`
+    ).join('');
+    
+    const hist = state.donateHistory.slice(-5).reverse();
+    document.getElementById('donateHistory').innerHTML = hist.length ? 
+      hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
+      '<div class="history-item" style="color:#52525b;">История пуста</div>';
+  }
+
+  function renderCharityPage(){
+    const amounts = [50,100,250,500];
+    document.getElementById('charityAmounts').innerHTML = amounts.map(a => 
+      `<button class="donate-amount-btn ${state.donateAmount===a?'active':''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
+    ).join('');
+    
+    document.getElementById('charityMethods').innerHTML = CHARITY_METHODS.map(m => 
+      `<div class="donate-card" onclick="charity('${m.id}')"><div class="donate-icon">${m.icon}</div><div class="donate-name">${m.name}</div></div>`
+    ).join('');
+    
+    const hist = state.charityHistory.slice(-5).reverse();
+    document.getElementById('charityHistory').innerHTML = hist.length ? 
+      hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
+      '<div class="history-item" style="color:#52525b;">История пуста</div>';
+  }
+
+  window.setDonateAmount = function(a){ state.donateAmount = a; 
+    if(state.donateTab === 'donate') renderDonatePage(); 
+    else renderCharityPage(); 
+  };
+  
+  window.donate = function(methodId){
+    if(state.username === 'Гость') { openLoginModal(); return; }
+    const method = DONATE_METHODS.find(m => m.id === methodId);
+    const amount = Math.floor(state.donateAmount * method.multiplier);
+    state.coins += amount;
+    const histEntry = `${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: +${amount} 🪙`;
+    state.donateHistory.push(histEntry);
+    saveCurrentUser(); 
+    updateUI(); 
+    renderDonatePage();
+    showWinMessage(`💎 ${method.name}: +${amount} 🪙`);
+  };
+
+  window.charity = function(methodId){
+    if(state.username === 'Гость') { openLoginModal(); return; }
+    if(state.coins < state.donateAmount) { showWinMessage('❌ Недостаточно монет'); return; }
+    const method = CHARITY_METHODS.find(m => m.id === methodId);
+    state.coins -= state.donateAmount;
+    const histEntry = `${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: -${state.donateAmount} 🪙`;
+    state.charityHistory.push(histEntry);
+    saveCurrentUser(); 
+    updateUI(); 
+    renderCharityPage();
+    showWinMessage(`🎗️ ${method.message}`);
+  };
+
+  function openLoginModal(){ 
+    document.getElementById('loginModal').classList.add('active'); 
+    document.getElementById('loginError').textContent = ''; 
+    renderUserList(); 
+  }
+  
+  function closeLoginModal(){ document.getElementById('loginModal').classList.remove('active'); }
+  
+  function renderUserList(){
+    const u = DB.all(), l = document.getElementById('userList');
+    if(!u.length) { l.innerHTML = '<div style="color:#52525b;text-align:center;padding:14px;">Создай первый аккаунт</div>'; return; }
+    l.innerHTML = u.map(u => `<div class="user-item" onclick="switchUser('${u}')"><div class="avatar" style="width:28px;height:28px;font-size:13px;">${u[0].toUpperCase()}</div><div>${u}</div></div>`).join('');
+  }
+
+  window.switchUser = function(u){ 
+    state.username = u; 
+    DB.current = u; 
+    DB.save(); 
+    loadUserData(); 
+    closeLoginModal(); 
+    state.selectedItems.clear(); 
+    renderCasesList();
+    renderInventory(); 
+    renderDonatePage(); 
+  };
+
+  window.login = function(){
+    const u = document.getElementById('usernameInput').value.trim();
+    const p = document.getElementById('passwordInput').value.trim();
+    const e = document.getElementById('loginError');
+    if(!u || !p) { e.textContent = 'Заполни поля'; return; }
+    if(DB.get(u)) { if(!DB.check(u,p)) { e.textContent = 'Неверный пароль'; return; } }
+    else { const r = DB.create(u,p); if(!r.s) { e.textContent = r.e; return; } }
+    state.username = u; 
+    DB.current = u; 
+    DB.save(); 
+    loadUserData(); 
+    closeLoginModal(); 
+    state.selectedItems.clear(); 
+    renderCasesList();
+    renderInventory(); 
+    renderDonatePage(); 
+  };
+
+  renderCasesList();
+  loadUserData();
+  renderDonatePage();
+  
+  setInterval(() => {
+    document.getElementById('onlineCount').textContent = (94127 + Math.floor(Math.random()*3000)-1000).toLocaleString();
+  }, 1500);
+</script>
 </body>
 </html>
