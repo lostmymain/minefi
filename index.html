@@ -909,9 +909,9 @@
 
   <div id="inventory" class="section">
     <div class="inventory-controls">
-      <button class="filter-btn active" data-sort="default">📋 Все</button>
-      <button class="filter-btn" data-sort="cheap">⬆️ Дешёвые</button>
-      <button class="filter-btn" data-sort="expensive">⬇️ Дорогие</button>
+      <button class="filter-btn active" data-sort="default" onclick="setInventorySort('default')">📋 Все</button>
+      <button class="filter-btn" data-sort="cheap" onclick="setInventorySort('cheap')">⬆️ Дешёвые</button>
+      <button class="filter-btn" data-sort="expensive" onclick="setInventorySort('expensive')">⬇️ Дорогие</button>
       <button class="bulk-sell-btn" onclick="sellSelected()">💰 Продать</button>
     </div>
     <div class="inventory-grid" id="inventoryList"></div>
@@ -939,8 +939,8 @@
 
   <div id="donate" class="section">
     <div class="donate-tabs">
-      <div class="donate-tab active" data-donate-tab="donate">💎 Донат</div>
-      <div class="donate-tab" data-donate-tab="charity">🎗️ Благотворительность</div>
+      <div class="donate-tab active" data-donate-tab="donate" onclick="switchDonateTab('donate')">💎 Донат</div>
+      <div class="donate-tab" data-donate-tab="charity" onclick="switchDonateTab('charity')">🎗️ Благотворительность</div>
     </div>
     
     <div id="donateContent">
@@ -978,665 +978,561 @@
 </div>
 
 <script>
-  "use strict";
-
-  // ========== КОНФИГУРАЦИЯ SUPABASE ==========
-  const SUPABASE_URL = 'https://uazxdbpoqwsixodxyitu.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhenhkYnBvcXdzaXhvZHh5aXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTQ4MDAsImV4cCI6MjA5MTgzMDgwMH0.Ngjv16zFSu0-DpFXa7WRVBhR1quz5qE4r0-f3XSt2Qw';
-  
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ========== СИСТЕМА СИНХРОНИЗАЦИИ ==========
-  let currentUserId = null;
-  let realtimeChannel = null;
-  let isRemoteUpdate = false;
-
-  function getRandomDrop() {
-    const rand = Math.random() * 100;
-    if (rand < 40) return 1;
-    else if (rand < 65) return 2;
-    else if (rand < 85) return 3;
-    else if (rand < 95) return 4;
-    else if (rand < 99) return 5;
-    else return Math.floor(Math.random() * 3) + 6;
-  }
-
-  const CASE_CATEGORIES = {
-    berries: '🍓 Ягоды', fruits: '🍎 Фрукты', exotic: '🥝 Экзотика',
-    legendary: '👑 Легенды', cursed: '💀 Проклятые', vegetables: '🥕 Овощи'
-  };
-
-  const generateCases = () => {
-    const cases = [];
-    const names = {
-      berries: ['Strawberry','Blueberry','Raspberry','Blackberry','Cranberry','Goji'],
-      fruits: ['Apple','Banana','Orange','Peach','Mango','Watermelon'],
-      exotic: ['Dragonfruit','Durian','Lychee','Rambutan','Jackfruit','Mangosteen'],
-      legendary: ['Goldenberry','Diamond','Moonberry','Starfruit','Voidberry','Soulfruit'],
-      cursed: ['Cursed','Bloodberry','Nightshade','Witchfruit','Demongrape','Shadow'],
-      vegetables: ['Carrot','Potato','Tomato','Cucumber','Broccoli','Pepper']
-    };
-    const emojis = {
-      berries: ['🍓','🫐','🍇','🖤','🍒','🔴'],
-      fruits: ['🍎','🍌','🍊','🍑','🥭','🍉'],
-      exotic: ['🐉','🤢','🧊','🦔','🎃','👸'],
-      legendary: ['✨','💎','🌙','⭐','🕳️','👻'],
-      cursed: ['👁️','🩸','🌑','🧙','😈','🌫️'],
-      vegetables: ['🥕','🥔','🍅','🥒','🥦','🌶️']
-    };
+  // Ждём загрузки DOM
+  document.addEventListener('DOMContentLoaded', function() {
+    // ========== КОНФИГУРАЦИЯ SUPABASE ==========
+    const SUPABASE_URL = 'https://uazxdbpoqwsixodxyitu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhenhkYnBvcXdzaXhvZHh5aXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTQ4MDAsImV4cCI6MjA5MTgzMDgwMH0.Ngjv16zFSu0-DpFXa7WRVBhR1quz5qE4r0-f3XSt2Qw';
     
-    Object.entries(CASE_CATEGORIES).forEach(([cat, catName]) => {
-      for(let i = 0; i < 6; i++) {
-        const cost = Math.floor(Math.random() * 200) + 50;
-        cases.push({
-          id: `${cat}_${i}`,
-          name: names[cat][i],
-          emoji: emojis[cat][i],
-          category: cat,
-          categoryName: catName,
-          cost: cost,
-          berryPrice: Math.floor(cost * 0.4)
-        });
-      }
-    });
-    return cases;
-  };
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const CASES = generateCases();
-  const BERRY_PRICES = {};
-  CASES.forEach(c => { BERRY_PRICES[c.id] = c.berryPrice; });
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let currentUserId = null;
+    let realtimeChannel = null;
+    let isRemoteUpdate = false;
 
-  const DONATE_METHODS = [
-    {id:'pikopay',name:'PikoPay',icon:'💳',multiplier:1},
-    {id:'spikob',name:'SpikoB',icon:'🏦',multiplier:1.15},
-    {id:'visapiko',name:'VisaPiko',icon:'💎',multiplier:1.3}
-  ];
-
-  const CHARITY_METHODS = [
-    {id:'help_children',name:'Детям',icon:'👶',message:'Спасибо! Дети получили PicoChat'},
-    {id:'help_animals',name:'Животным',icon:'🐕',message:'Мяу! Животные благодарят!'},
-    {id:'help_admin',name:'Админу',icon:'🍺',message:'Админ купил пиво. Сервер работает!'}
-  ];
-
-  let state = {
-    username: null,
-    coins: 1000,
-    berries: {},
-    currentCase: null,
-    inventorySort: 'default',
-    isSpinning: false,
-    selectedItems: new Set(),
-    donateAmount: 100,
-    donateHistory: [],
-    charityHistory: [],
-    donateTab: 'donate'
-  };
-
-  function showNotification(text) {
-    const notif = document.createElement('div');
-    notif.style.cssText = `
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.9); color: white; padding: 12px 24px;
-      border-radius: 30px; z-index: 9999; font-weight: 600;
-      border: 1px solid #ff6b9d;
-    `;
-    notif.textContent = text;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 3000);
-  }
-
-  function subscribeToUserData() {
-    if (!currentUserId) return;
-    
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
+    function getRandomDrop() {
+      const rand = Math.random() * 100;
+      if (rand < 40) return 1;
+      else if (rand < 65) return 2;
+      else if (rand < 85) return 3;
+      else if (rand < 95) return 4;
+      else if (rand < 99) return 5;
+      else return Math.floor(Math.random() * 3) + 6;
     }
-    
-    realtimeChannel = supabase
-      .channel(`user_data_${currentUserId}`)
-      .on(
-        'postgres_changes',
-        {
+
+    const CASE_CATEGORIES = {
+      berries: '🍓 Ягоды', fruits: '🍎 Фрукты', exotic: '🥝 Экзотика',
+      legendary: '👑 Легенды', cursed: '💀 Проклятые', vegetables: '🥕 Овощи'
+    };
+
+    const generateCases = () => {
+      const cases = [];
+      const names = {
+        berries: ['Strawberry','Blueberry','Raspberry','Blackberry','Cranberry','Goji'],
+        fruits: ['Apple','Banana','Orange','Peach','Mango','Watermelon'],
+        exotic: ['Dragonfruit','Durian','Lychee','Rambutan','Jackfruit','Mangosteen'],
+        legendary: ['Goldenberry','Diamond','Moonberry','Starfruit','Voidberry','Soulfruit'],
+        cursed: ['Cursed','Bloodberry','Nightshade','Witchfruit','Demongrape','Shadow'],
+        vegetables: ['Carrot','Potato','Tomato','Cucumber','Broccoli','Pepper']
+      };
+      const emojis = {
+        berries: ['🍓','🫐','🍇','🖤','🍒','🔴'],
+        fruits: ['🍎','🍌','🍊','🍑','🥭','🍉'],
+        exotic: ['🐉','🤢','🧊','🦔','🎃','👸'],
+        legendary: ['✨','💎','🌙','⭐','🕳️','👻'],
+        cursed: ['👁️','🩸','🌑','🧙','😈','🌫️'],
+        vegetables: ['🥕','🥔','🍅','🥒','🥦','🌶️']
+      };
+      
+      Object.entries(CASE_CATEGORIES).forEach(([cat, catName]) => {
+        for(let i = 0; i < 6; i++) {
+          const cost = Math.floor(Math.random() * 200) + 50;
+          cases.push({
+            id: `${cat}_${i}`,
+            name: names[cat][i],
+            emoji: emojis[cat][i],
+            category: cat,
+            categoryName: catName,
+            cost: cost,
+            berryPrice: Math.floor(cost * 0.4)
+          });
+        }
+      });
+      return cases;
+    };
+
+    const CASES = generateCases();
+    const BERRY_PRICES = {};
+    CASES.forEach(c => { BERRY_PRICES[c.id] = c.berryPrice; });
+
+    const DONATE_METHODS = [
+      {id:'pikopay',name:'PikoPay',icon:'💳',multiplier:1},
+      {id:'spikob',name:'SpikoB',icon:'🏦',multiplier:1.15},
+      {id:'visapiko',name:'VisaPiko',icon:'💎',multiplier:1.3}
+    ];
+
+    const CHARITY_METHODS = [
+      {id:'help_children',name:'Детям',icon:'👶',message:'Спасибо! Дети получили PicoChat'},
+      {id:'help_animals',name:'Животным',icon:'🐕',message:'Мяу! Животные благодарят!'},
+      {id:'help_admin',name:'Админу',icon:'🍺',message:'Админ купил пиво. Сервер работает!'}
+    ];
+
+    let state = {
+      username: null,
+      coins: 1000,
+      berries: {},
+      currentCase: null,
+      inventorySort: 'default',
+      isSpinning: false,
+      selectedItems: new Set(),
+      donateAmount: 100,
+      donateHistory: [],
+      charityHistory: [],
+      donateTab: 'donate'
+    };
+
+    function showNotification(text) {
+      const notif = document.createElement('div');
+      notif.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.9); color: white; padding: 12px 24px;
+        border-radius: 30px; z-index: 9999; font-weight: 600;
+        border: 1px solid #ff6b9d;
+      `;
+      notif.textContent = text;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
+    }
+
+    function subscribeToUserData() {
+      if (!currentUserId) return;
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      
+      realtimeChannel = supabase
+        .channel(`user_data_${currentUserId}`)
+        .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',
           table: 'user_data',
           filter: `user_id=eq.${currentUserId}`
-        },
-        (payload) => {
-          if (isRemoteUpdate) {
-            isRemoteUpdate = false;
-            return;
-          }
-          
+        }, (payload) => {
+          if (isRemoteUpdate) { isRemoteUpdate = false; return; }
           const newData = payload.new;
           state.coins = newData.coins;
           state.berries = newData.berries;
           state.donateHistory = newData.donate_history;
           state.charityHistory = newData.charity_history;
-          
           updateUI();
-          if (document.getElementById('inventory').classList.contains('active')) {
-            renderInventory();
-          }
+          if (document.getElementById('inventory').classList.contains('active')) renderInventory();
           if (document.getElementById('donate').classList.contains('active')) {
-            renderDonatePage();
+            if (state.donateTab === 'donate') renderDonatePage();
+            else renderCharityPage();
           }
-          
           showNotification('🔄 Данные синхронизированы');
-        }
-      )
-      .subscribe();
-  }
-
-  async function saveUserData() {
-    if (!currentUserId) return;
-    
-    isRemoteUpdate = true;
-    
-    const { error } = await supabase
-      .from('user_data')
-      .update({
-        coins: state.coins,
-        berries: state.berries,
-        donate_history: state.donateHistory,
-        charity_history: state.charityHistory,
-        updated_at: new Date()
-      })
-      .eq('user_id', currentUserId);
-    
-    if (error) {
-      console.error('Ошибка сохранения:', error);
-      showNotification('❌ Ошибка синхронизации');
+        })
+        .subscribe();
     }
-  }
 
-  async function loadUserData() {
-    if (!state.username) return;
-    
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('username', state.username)
-      .single();
-    
-    if (userError || !userData) {
-      console.error('Пользователь не найден');
-      return;
+    async function saveUserData() {
+      if (!currentUserId) return;
+      isRemoteUpdate = true;
+      const { error } = await supabase
+        .from('user_data')
+        .update({
+          coins: state.coins,
+          berries: state.berries,
+          donate_history: state.donateHistory,
+          charity_history: state.charityHistory,
+          updated_at: new Date()
+        })
+        .eq('user_id', currentUserId);
+      if (error) console.error('Ошибка сохранения:', error);
     }
-    
-    currentUserId = userData.id;
-    
-    const { data: gameData, error: gameError } = await supabase
-      .from('user_data')
-      .select('*')
-      .eq('user_id', currentUserId)
-      .single();
-    
-    if (gameData) {
-      state.coins = gameData.coins;
-      state.berries = gameData.berries;
-      state.donateHistory = gameData.donate_history;
-      state.charityHistory = gameData.charity_history;
-    }
-    
-    updateUI();
-    updateHeaderBalance();
-    subscribeToUserData();
-  }
 
-  async function registerUser(username, password) {
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id')
-      .eq('username', username)
-      .single();
-    
-    if (existing) {
-      const { data: user } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-        .single();
-      
-      if (!user) {
-        return { success: false, error: 'Неверный пароль' };
+    async function loadUserData() {
+      if (!state.username) return;
+      const { data: userData } = await supabase.from('users').select('id').eq('username', state.username).single();
+      if (!userData) return;
+      currentUserId = userData.id;
+      const { data: gameData } = await supabase.from('user_data').select('*').eq('user_id', currentUserId).single();
+      if (gameData) {
+        state.coins = gameData.coins;
+        state.berries = gameData.berries;
+        state.donateHistory = gameData.donate_history;
+        state.charityHistory = gameData.charity_history;
       }
+      updateUI();
+      subscribeToUserData();
+    }
+
+    async function registerUser(username, password) {
+      const { data: existing } = await supabase.from('users').select('id').eq('username', username).single();
+      if (existing) {
+        const { data: user } = await supabase.from('users').select('*').eq('username', username).eq('password', password).single();
+        if (!user) return { success: false, error: 'Неверный пароль' };
+        return { success: true, user };
+      }
+      const { data: newUser, error } = await supabase.from('users').insert({ username, password }).select().single();
+      if (error) return { success: false, error: 'Ошибка создания' };
+      await supabase.from('user_data').insert({ user_id: newUser.id, coins: 1000, berries: {}, donate_history: [], charity_history: [] });
+      return { success: true, user: newUser };
+    }
+
+    async function loadAllUsers() {
+      const { data } = await supabase.from('users').select('username').order('username');
+      return data ? data.map(u => u.username) : [];
+    }
+
+    function updateHeaderBalance() {
+      document.getElementById('headerBalance').textContent = `🪙 ${state.coins}`;
+    }
+
+    function updateUI() {
+      document.getElementById('displayName').textContent = state.username || 'Гость';
+      document.getElementById('userAvatar').textContent = state.username?.[0]?.toUpperCase() || '👤';
+      updateHeaderBalance();
+    }
+
+    // ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
+    window.openLoginModal = function() {
+      document.getElementById('loginModal').classList.add('active');
+      document.getElementById('loginError').textContent = '';
+      renderUserList();
+    };
+
+    window.closeLoginModal = function() {
+      document.getElementById('loginModal').classList.remove('active');
+    };
+
+    async function renderUserList() {
+      const users = await loadAllUsers();
+      const l = document.getElementById('userList');
+      if (!users.length) {
+        l.innerHTML = '<div style="color:#52525b;text-align:center;padding:14px;">Создай первый аккаунт</div>';
+        return;
+      }
+      l.innerHTML = users.map(u => `<div class="user-item" onclick="switchUser('${u}')"><div class="avatar" style="width:28px;height:28px;font-size:13px;">${u[0].toUpperCase()}</div><div>${u}</div></div>`).join('');
+    }
+
+    window.switchUser = async function(username) {
+      state.username = username;
+      closeLoginModal();
+      await loadUserData();
+      state.selectedItems.clear();
+      renderCasesList();
+      renderInventory();
+      renderDonatePage();
+      showNotification(`✅ Вошли как ${username}`);
+    };
+
+    window.login = async function() {
+      const u = document.getElementById('usernameInput').value.trim();
+      const p = document.getElementById('passwordInput').value.trim();
+      const e = document.getElementById('loginError');
+      if (!u || !p) { e.textContent = 'Заполни поля'; return; }
+      if (u.length < 2) { e.textContent = 'Логин короткий'; return; }
+      if (p.length < 3) { e.textContent = 'Пароль короткий'; return; }
       
-      return { success: true, user };
-    }
-    
-    const { data: newUser, error } = await supabase
-      .from('users')
-      .insert({
-        username: username,
-        password: password
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      return { success: false, error: 'Ошибка создания' };
-    }
-    
-    await supabase
-      .from('user_data')
-      .insert({
-        user_id: newUser.id,
-        coins: 1000,
-        berries: {},
-        donate_history: [],
-        charity_history: []
-      });
-    
-    return { success: true, user: newUser };
-  }
+      const result = await registerUser(u, p);
+      if (!result.success) { e.textContent = result.error; return; }
+      
+      state.username = u;
+      closeLoginModal();
+      await loadUserData();
+      document.getElementById('usernameInput').value = '';
+      document.getElementById('passwordInput').value = '';
+      renderCasesList();
+      renderInventory();
+      renderDonatePage();
+      showNotification(`✅ Добро пожаловать, ${u}!`);
+    };
 
-  async function loadAllUsers() {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('username')
-      .order('username');
-    
-    if (error) {
-      console.error('Ошибка загрузки пользователей:', error);
-      return [];
-    }
-    
-    return users.map(u => u.username);
-  }
-
-  function updateHeaderBalance() {
-    document.getElementById('headerBalance').textContent = `🪙 ${state.coins}`;
-  }
-
-  function updateUI(){
-    document.getElementById('displayName').textContent = state.username || 'Гость';
-    document.getElementById('userAvatar').textContent = state.username?.[0]?.toUpperCase() || '👤';
-    updateHeaderBalance();
-  }
-
-  window.login = async function() {
-    const u = document.getElementById('usernameInput').value.trim();
-    const p = document.getElementById('passwordInput').value.trim();
-    const e = document.getElementById('loginError');
-    
-    if (!u || !p) {
-      e.textContent = 'Заполни поля';
-      return;
-    }
-    
-    if (u.length < 2) {
-      e.textContent = 'Логин слишком короткий';
-      return;
-    }
-    
-    if (p.length < 3) {
-      e.textContent = 'Пароль слишком короткий';
-      return;
-    }
-    
-    const result = await registerUser(u, p);
-    
-    if (!result.success) {
-      e.textContent = result.error;
-      return;
-    }
-    
-    state.username = u;
-    closeLoginModal();
-    
-    await loadUserData();
-    
-    document.getElementById('usernameInput').value = '';
-    document.getElementById('passwordInput').value = '';
-    
-    renderCasesList();
-    renderInventory();
-    renderDonatePage();
-    
-    showNotification(`✅ Добро пожаловать, ${u}!`);
-  };
-
-  window.switchUser = async function(username) {
-    state.username = username;
-    closeLoginModal();
-    await loadUserData();
-    state.selectedItems.clear();
-    renderCasesList();
-    renderInventory();
-    renderDonatePage();
-    showNotification(`✅ Вошли как ${username}`);
-  };
-
-  function openLoginModal() { 
-    document.getElementById('loginModal').classList.add('active'); 
-    document.getElementById('loginError').textContent = ''; 
-    renderUserList(); 
-  }
-  
-  function closeLoginModal() { 
-    document.getElementById('loginModal').classList.remove('active'); 
-  }
-  
-  async function renderUserList() {
-    const users = await loadAllUsers();
-    const l = document.getElementById('userList');
-    if (!users.length) { 
-      l.innerHTML = '<div style="color:#52525b;text-align:center;padding:14px;">Создай первый аккаунт</div>'; 
-      return; 
-    }
-    l.innerHTML = users.map(u => `<div class="user-item" onclick="switchUser('${u}')"><div class="avatar" style="width:28px;height:28px;font-size:13px;">${u[0].toUpperCase()}</div><div>${u}</div></div>`).join('');
-  }
-
-  document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-    b.classList.add('active'); 
-    document.getElementById(b.dataset.section).classList.add('active');
-    if(b.dataset.section==='cases') renderCasesList();
-    if(b.dataset.section==='inventory') renderInventory();
-    if(b.dataset.section==='donate') renderDonatePage();
-  }));
-
-  document.querySelectorAll('[data-donate-tab]').forEach(t => t.addEventListener('click', () => {
-    document.querySelectorAll('[data-donate-tab]').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    state.donateTab = t.dataset.donateTab;
-    document.getElementById('donateContent').style.display = state.donateTab === 'donate' ? 'block' : 'none';
-    document.getElementById('charityContent').style.display = state.donateTab === 'charity' ? 'block' : 'none';
-    if(state.donateTab === 'donate') renderDonatePage();
-    else renderCharityPage();
-  }));
-
-  function renderCasesList() {
-    document.getElementById('casesListView').style.display = 'block';
-    document.getElementById('caseDetailView').style.display = 'none';
-    
-    const grid = document.getElementById('casesGrid');
-    const casesByCategory = {};
-    CASES.forEach(c => {
-      if(!casesByCategory[c.category]) casesByCategory[c.category] = [];
-      casesByCategory[c.category].push(c);
-    });
-    
-    let html = '';
-    Object.entries(casesByCategory).forEach(([cat, cases]) => {
-      html += `<div style="grid-column:1/-1;margin:6px 0 3px;color:#a1a1aa;font-size:13px;font-weight:600;">${CASE_CATEGORIES[cat]}</div>`;
-      cases.forEach(c => {
-        html += `<div class="case-card" onclick="openCase('${c.id}')">
-          <div class="case-card-emoji">${c.emoji}</div>
-          <div class="case-card-name">${c.name}</div>
-          <div class="case-card-price">${c.cost} 🪙</div>
-        </div>`;
-      });
-    });
-    grid.innerHTML = html;
-  }
-
-  window.openCase = function(caseId) {
-    if(!state.username) {
-      openLoginModal();
-      return;
-    }
-    state.currentCase = CASES.find(c => c.id === caseId);
-    document.getElementById('casesListView').style.display = 'none';
-    document.getElementById('caseDetailView').style.display = 'block';
-    
-    const c = state.currentCase;
-    document.getElementById('detailCategoryTitle').textContent = c.name;
-    
-    document.getElementById('caseDetailContent').innerHTML = `
-      <div class="case-detail-info">
-        <div class="case-detail-emoji">${c.emoji}</div>
-        <div class="case-detail-name">${c.name}</div>
-        <div class="case-detail-stats">
-          <div class="case-stat"><div class="case-stat-value">${c.cost}</div><div class="case-stat-label">Стоимость</div></div>
-          <div class="case-stat"><div class="case-stat-value">${c.berryPrice}</div><div class="case-stat-label">Цена ягоды</div></div>
-        </div>
-      </div>
-      <div class="spinner-wrapper">
-        <div class="pointer"></div>
-        <div class="spinner"><div class="reel" id="reel"></div></div>
-      </div>
-      <button class="spin-btn" id="spinButton" onclick="spinCase()">🎰 Крутить (${c.cost} 🪙)</button>
-      <div id="winMessage" class="win-message hidden"></div>
-    `;
-    
-    buildReel();
-  };
-
-  window.backToCasesList = function() {
-    document.getElementById('casesListView').style.display = 'block';
-    document.getElementById('caseDetailView').style.display = 'none';
-    updateUI();
-  };
-
-  function buildReel(){
-    const r = document.getElementById('reel');
-    if(!r) return;
-    const c = state.currentCase;
-    const items = [];
-    for(let i = 0; i < 40; i++) {
-      const drop = getRandomDrop();
-      items.push({val: drop, emoji: c.emoji});
-    }
-    
-    r.innerHTML = items.map(item => 
-      `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`
-    ).join('');
-    r.style.transform = 'translateX(0)';
-    r.style.transition = 'none';
-  }
-
-  function showWifiInfo(){ 
-    const msg = document.getElementById('winMessage');
-    if(msg) {
-      msg.textContent = '📶 WiFi: PicoChat_5G | Пароль: 12345678';
-      msg.classList.remove('hidden');
-      setTimeout(() => msg.classList.add('hidden'), 3000);
-    } else {
+    window.showWifiInfo = function() {
       showNotification('📶 WiFi: PicoChat_5G | Пароль: 12345678');
-    }
-  }
+    };
 
-  window.spinCase = async function(){
-    if(!state.username) { openLoginModal(); return; }
-    if(state.isSpinning) return;
-    
-    const c = state.currentCase;
-    if(state.coins < c.cost) { 
-      const msg = document.getElementById('winMessage');
-      if(msg) { msg.textContent = '❌ Недостаточно монет'; msg.classList.remove('hidden'); }
-      return; 
-    }
-    
-    state.isSpinning = true;
-    state.coins -= c.cost;
-    await saveUserData();
-    updateUI();
-    
-    const r = document.getElementById('reel');
-    const items = [];
-    for(let i = 0; i < 40; i++) {
-      const drop = getRandomDrop();
-      items.push({val: drop, emoji: c.emoji});
-    }
-    r.innerHTML = items.map(item => 
-      `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`
-    ).join('');
-    
-    const itemWidth = 93;
-    const steps = Math.floor(Math.random() * 18) + 20;
-    const offset = steps * itemWidth + itemWidth / 2;
-    
-    r.style.transition = 'transform 2.5s cubic-bezier(0.2,0.8,0.3,1)';
-    r.style.transform = `translateX(-${offset}px)`;
-    
-    setTimeout(async () => {
-      const items = document.querySelectorAll('.reel-item');
-      const spinner = document.querySelector('.spinner');
-      const centerX = spinner.getBoundingClientRect().left + spinner.offsetWidth / 2;
-      
-      let winner = items[0];
-      let minDist = Infinity;
-      
-      items.forEach(item => {
-        const rect = item.getBoundingClientRect();
-        const itemCenter = rect.left + rect.width / 2;
-        const dist = Math.abs(centerX - itemCenter);
-        if(dist < minDist) { minDist = dist; winner = item; }
+    // Навигация
+    document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', function() {
+      document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById(this.dataset.section).classList.add('active');
+      if (this.dataset.section === 'cases') renderCasesList();
+      if (this.dataset.section === 'inventory') renderInventory();
+      if (this.dataset.section === 'donate') renderDonatePage();
+    }));
+
+    window.switchDonateTab = function(tab) {
+      state.donateTab = tab;
+      document.querySelectorAll('[data-donate-tab]').forEach(x => x.classList.remove('active'));
+      document.querySelector(`[data-donate-tab="${tab}"]`).classList.add('active');
+      document.getElementById('donateContent').style.display = tab === 'donate' ? 'block' : 'none';
+      document.getElementById('charityContent').style.display = tab === 'charity' ? 'block' : 'none';
+      if (tab === 'donate') renderDonatePage();
+      else renderCharityPage();
+    };
+
+    function renderCasesList() {
+      document.getElementById('casesListView').style.display = 'block';
+      document.getElementById('caseDetailView').style.display = 'none';
+      const grid = document.getElementById('casesGrid');
+      const casesByCategory = {};
+      CASES.forEach(c => {
+        if (!casesByCategory[c.category]) casesByCategory[c.category] = [];
+        casesByCategory[c.category].push(c);
       });
-      
-      const winAmount = parseInt(winner.dataset.value);
-      state.berries[state.currentCase.id] = (state.berries[state.currentCase.id] || 0) + winAmount;
+      let html = '';
+      Object.entries(casesByCategory).forEach(([cat, cases]) => {
+        html += `<div style="grid-column:1/-1;margin:6px 0 3px;color:#a1a1aa;font-size:13px;font-weight:600;">${CASE_CATEGORIES[cat]}</div>`;
+        cases.forEach(c => {
+          html += `<div class="case-card" onclick="openCase('${c.id}')">
+            <div class="case-card-emoji">${c.emoji}</div>
+            <div class="case-card-name">${c.name}</div>
+            <div class="case-card-price">${c.cost} 🪙</div>
+          </div>`;
+        });
+      });
+      grid.innerHTML = html;
+    }
+
+    window.openCase = function(caseId) {
+      if (!state.username) { openLoginModal(); return; }
+      state.currentCase = CASES.find(c => c.id === caseId);
+      document.getElementById('casesListView').style.display = 'none';
+      document.getElementById('caseDetailView').style.display = 'block';
+      const c = state.currentCase;
+      document.getElementById('detailCategoryTitle').textContent = c.name;
+      document.getElementById('caseDetailContent').innerHTML = `
+        <div class="case-detail-info">
+          <div class="case-detail-emoji">${c.emoji}</div>
+          <div class="case-detail-name">${c.name}</div>
+          <div class="case-detail-stats">
+            <div class="case-stat"><div class="case-stat-value">${c.cost}</div><div class="case-stat-label">Стоимость</div></div>
+            <div class="case-stat"><div class="case-stat-value">${c.berryPrice}</div><div class="case-stat-label">Цена ягоды</div></div>
+          </div>
+        </div>
+        <div class="spinner-wrapper">
+          <div class="pointer"></div>
+          <div class="spinner"><div class="reel" id="reel"></div></div>
+        </div>
+        <button class="spin-btn" onclick="spinCase()">🎰 Крутить (${c.cost} 🪙)</button>
+        <div id="winMessage" class="win-message hidden"></div>
+      `;
+      buildReel();
+    };
+
+    window.backToCasesList = function() {
+      document.getElementById('casesListView').style.display = 'block';
+      document.getElementById('caseDetailView').style.display = 'none';
+      updateUI();
+    };
+
+    function buildReel() {
+      const r = document.getElementById('reel');
+      if (!r) return;
+      const c = state.currentCase;
+      const items = [];
+      for (let i = 0; i < 40; i++) {
+        items.push({ val: getRandomDrop(), emoji: c.emoji });
+      }
+      r.innerHTML = items.map(item => `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`).join('');
+      r.style.transform = 'translateX(0)';
+      r.style.transition = 'none';
+    }
+
+    window.spinCase = async function() {
+      if (!state.username) { openLoginModal(); return; }
+      if (state.isSpinning) return;
+      const c = state.currentCase;
+      if (state.coins < c.cost) {
+        const msg = document.getElementById('winMessage');
+        if (msg) { msg.textContent = '❌ Недостаточно монет'; msg.classList.remove('hidden'); }
+        return;
+      }
+      state.isSpinning = true;
+      state.coins -= c.cost;
       await saveUserData();
       updateUI();
       
-      const profit = winAmount * c.berryPrice - c.cost;
-      
-      const msg = document.getElementById('winMessage');
-      if(msg) {
-        msg.textContent = `Выпало ${winAmount} ${c.emoji} | ${profit >= 0 ? '+' : ''}${profit} 🪙`;
-        msg.classList.remove('hidden');
-        setTimeout(() => msg.classList.add('hidden'), 3000);
+      const r = document.getElementById('reel');
+      const items = [];
+      for (let i = 0; i < 40; i++) {
+        items.push({ val: getRandomDrop(), emoji: c.emoji });
       }
+      r.innerHTML = items.map(item => `<div class="reel-item" data-value="${item.val}">${item.emoji}${item.val}</div>`).join('');
       
-      state.isSpinning = false;
-      r.style.transition = 'none';
-      setTimeout(() => r.style.transition = '', 50);
-    }, 2600);
-  };
+      const itemWidth = 93;
+      const steps = Math.floor(Math.random() * 18) + 20;
+      const offset = steps * itemWidth + itemWidth / 2;
+      
+      r.style.transition = 'transform 2.5s cubic-bezier(0.2,0.8,0.3,1)';
+      r.style.transform = `translateX(-${offset}px)`;
+      
+      setTimeout(async () => {
+        const items = document.querySelectorAll('.reel-item');
+        const spinner = document.querySelector('.spinner');
+        const centerX = spinner.getBoundingClientRect().left + spinner.offsetWidth / 2;
+        let winner = items[0];
+        let minDist = Infinity;
+        items.forEach(item => {
+          const rect = item.getBoundingClientRect();
+          const dist = Math.abs(centerX - (rect.left + rect.width / 2));
+          if (dist < minDist) { minDist = dist; winner = item; }
+        });
+        
+        const winAmount = parseInt(winner.dataset.value);
+        state.berries[state.currentCase.id] = (state.berries[state.currentCase.id] || 0) + winAmount;
+        await saveUserData();
+        updateUI();
+        
+        const profit = winAmount * c.berryPrice - c.cost;
+        const msg = document.getElementById('winMessage');
+        if (msg) {
+          msg.textContent = `Выпало ${winAmount} ${c.emoji} | ${profit >= 0 ? '+' : ''}${profit} 🪙`;
+          msg.classList.remove('hidden');
+          setTimeout(() => msg.classList.add('hidden'), 3000);
+        }
+        state.isSpinning = false;
+        r.style.transition = 'none';
+        setTimeout(() => r.style.transition = '', 50);
+      }, 2600);
+    };
 
-  function renderInventory(){
-    const cont = document.getElementById('inventoryList');
-    let items = Object.entries(state.berries).filter(([_,c]) => c > 0).map(([k,c]) => {
-      const caseData = CASES.find(cs => cs.id === k) || {name: k, emoji: '📦', berryPrice: 10};
-      return {key: k, count: c, name: caseData.name, emoji: caseData.emoji, price: caseData.berryPrice};
-    });
-    
-    if(state.inventorySort === 'cheap') items.sort((a,b) => a.price - b.price);
-    if(state.inventorySort === 'expensive') items.sort((a,b) => b.price - a.price);
-    
-    if(!items.length) { cont.innerHTML = '<div class="card" style="text-align:center;">Инвентарь пуст</div>'; return; }
-    
-    cont.innerHTML = items.map(i => `<div class="inventory-item ${state.selectedItems.has(i.key)?'selected':''}">
-      <div class="item-info"><input type="checkbox" class="item-checkbox" ${state.selectedItems.has(i.key)?'checked':''} onchange="toggleSelect('${i.key}')"><div class="item-emoji">${i.emoji}</div><div><div class="item-name">${i.name}</div><div class="item-price">${i.price}🪙/шт</div></div></div>
-      <div class="item-actions"><span class="item-count">${i.count}</span><div class="sell-controls"><input type="number" class="sell-amount" id="sell-${i.key}" value="1" min="1" max="${i.count}"><button class="sell-btn" onclick="sellItem('${i.key}')">Продать</button></div></div>
-    </div>`).join('');
-  }
+    function renderInventory() {
+      const cont = document.getElementById('inventoryList');
+      let items = Object.entries(state.berries).filter(([_, c]) => c > 0).map(([k, c]) => {
+        const caseData = CASES.find(cs => cs.id === k) || { name: k, emoji: '📦', berryPrice: 10 };
+        return { key: k, count: c, name: caseData.name, emoji: caseData.emoji, price: caseData.berryPrice };
+      });
+      
+      if (state.inventorySort === 'cheap') items.sort((a, b) => a.price - b.price);
+      if (state.inventorySort === 'expensive') items.sort((a, b) => b.price - a.price);
+      
+      if (!items.length) { cont.innerHTML = '<div class="card" style="text-align:center;">Инвентарь пуст</div>'; return; }
+      
+      cont.innerHTML = items.map(i => `
+        <div class="inventory-item ${state.selectedItems.has(i.key) ? 'selected' : ''}">
+          <div class="item-info">
+            <input type="checkbox" class="item-checkbox" ${state.selectedItems.has(i.key) ? 'checked' : ''} onchange="toggleSelect('${i.key}')">
+            <div class="item-emoji">${i.emoji}</div>
+            <div>
+              <div class="item-name">${i.name}</div>
+              <div class="item-price">${i.price}🪙/шт</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <span class="item-count">${i.count}</span>
+            <div class="sell-controls">
+              <input type="number" class="sell-amount" id="sell-${i.key}" value="1" min="1" max="${i.count}">
+              <button class="sell-btn" onclick="sellItem('${i.key}')">Продать</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
 
-  window.toggleSelect = function(k){ 
-    state.selectedItems.has(k) ? state.selectedItems.delete(k) : state.selectedItems.add(k); 
-    renderInventory(); 
-  };
+    window.toggleSelect = function(k) {
+      state.selectedItems.has(k) ? state.selectedItems.delete(k) : state.selectedItems.add(k);
+      renderInventory();
+    };
 
-  window.sellItem = async function(k){
-    const inp = document.getElementById(`sell-${k}`); 
-    let a = parseInt(inp?.value) || 1; 
-    a = Math.min(a, state.berries[k] || 0); 
-    if(a <= 0) return;
-    const p = BERRY_PRICES[k] || 10; 
-    state.berries[k] -= a; 
-    state.coins += a * p;
-    if(state.berries[k] <= 0) { delete state.berries[k]; state.selectedItems.delete(k); }
-    await saveUserData();
-    updateUI(); 
-    renderInventory(); 
-    showNotification(`Продано ${a} за ${a * p} 🪙`);
-  };
-  
-  window.sellSelected = async function(){
-    if(!state.selectedItems.size) { showNotification('Выбери ягоды'); return; }
-    let t = 0; 
-    state.selectedItems.forEach(k => { const c = state.berries[k] || 0, p = BERRY_PRICES[k] || 10; t += c * p; delete state.berries[k]; });
-    state.coins += t; 
-    state.selectedItems.clear(); 
-    await saveUserData();
-    updateUI(); 
-    renderInventory(); 
-    showNotification(`Продано всё за ${t} 🪙`);
-  };
+    window.sellItem = async function(k) {
+      const inp = document.getElementById(`sell-${k}`);
+      let a = parseInt(inp?.value) || 1;
+      a = Math.min(a, state.berries[k] || 0);
+      if (a <= 0) return;
+      const p = BERRY_PRICES[k] || 10;
+      state.berries[k] -= a;
+      state.coins += a * p;
+      if (state.berries[k] <= 0) { delete state.berries[k]; state.selectedItems.delete(k); }
+      await saveUserData();
+      updateUI();
+      renderInventory();
+      showNotification(`Продано ${a} за ${a * p} 🪙`);
+    };
 
-  document.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('[data-sort]').forEach(x => x.classList.remove('active'));
-    b.classList.add('active'); 
-    state.inventorySort = b.dataset.sort; 
-    renderInventory();
-  }));
+    window.sellSelected = async function() {
+      if (!state.selectedItems.size) { showNotification('Выбери ягоды'); return; }
+      let t = 0;
+      state.selectedItems.forEach(k => {
+        const c = state.berries[k] || 0;
+        t += c * (BERRY_PRICES[k] || 10);
+        delete state.berries[k];
+      });
+      state.coins += t;
+      state.selectedItems.clear();
+      await saveUserData();
+      updateUI();
+      renderInventory();
+      showNotification(`Продано всё за ${t} 🪙`);
+    };
 
-  function renderDonatePage(){
-    const amounts = [50,100,250,500,1000,2500,5000];
-    document.getElementById('donateAmounts').innerHTML = amounts.map(a => 
-      `<button class="donate-amount-btn ${state.donateAmount===a?'active':''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
-    ).join('');
-    
-    document.getElementById('donateMethods').innerHTML = DONATE_METHODS.map(m => 
-      `<div class="donate-card" onclick="donate('${m.id}')"><div class="donate-icon">${m.icon}</div><div class="donate-name">${m.name}</div><div class="donate-desc">+${Math.floor(state.donateAmount*m.multiplier)} 🪙</div></div>`
-    ).join('');
-    
-    const hist = state.donateHistory.slice(-5).reverse();
-    document.getElementById('donateHistory').innerHTML = hist.length ? 
-      hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
-      '<div class="history-item" style="color:#52525b;">История пуста</div>';
-  }
+    window.setInventorySort = function(sort) {
+      state.inventorySort = sort;
+      document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-sort="${sort}"]`).classList.add('active');
+      renderInventory();
+    };
 
-  function renderCharityPage(){
-    const amounts = [50,100,250,500];
-    document.getElementById('charityAmounts').innerHTML = amounts.map(a => 
-      `<button class="donate-amount-btn ${state.donateAmount===a?'active':''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
-    ).join('');
-    
-    document.getElementById('charityMethods').innerHTML = CHARITY_METHODS.map(m => 
-      `<div class="donate-card" onclick="charity('${m.id}')"><div class="donate-icon">${m.icon}</div><div class="donate-name">${m.name}</div></div>`
-    ).join('');
-    
-    const hist = state.charityHistory.slice(-5).reverse();
-    document.getElementById('charityHistory').innerHTML = hist.length ? 
-      hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
-      '<div class="history-item" style="color:#52525b;">История пуста</div>';
-  }
+    function renderDonatePage() {
+      const amounts = [50, 100, 250, 500, 1000, 2500, 5000];
+      document.getElementById('donateAmounts').innerHTML = amounts.map(a => 
+        `<button class="donate-amount-btn ${state.donateAmount === a ? 'active' : ''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
+      ).join('');
+      
+      document.getElementById('donateMethods').innerHTML = DONATE_METHODS.map(m => 
+        `<div class="donate-card" onclick="donate('${m.id}')">
+          <div class="donate-icon">${m.icon}</div>
+          <div class="donate-name">${m.name}</div>
+          <div class="donate-desc">+${Math.floor(state.donateAmount * m.multiplier)} 🪙</div>
+        </div>`
+      ).join('');
+      
+      const hist = state.donateHistory.slice(-5).reverse();
+      document.getElementById('donateHistory').innerHTML = hist.length ? 
+        hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
+        '<div class="history-item" style="color:#52525b;">История пуста</div>';
+    }
 
-  window.setDonateAmount = function(a){ 
-    state.donateAmount = a; 
-    if(state.donateTab === 'donate') renderDonatePage(); 
-    else renderCharityPage(); 
-  };
-  
-  window.donate = async function(methodId){
-    if(!state.username) { openLoginModal(); return; }
-    const method = DONATE_METHODS.find(m => m.id === methodId);
-    const amount = Math.floor(state.donateAmount * method.multiplier);
-    state.coins += amount;
-    const histEntry = `${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: +${amount} 🪙`;
-    state.donateHistory.push(histEntry);
-    await saveUserData();
-    updateUI(); 
+    function renderCharityPage() {
+      const amounts = [50, 100, 250, 500];
+      document.getElementById('charityAmounts').innerHTML = amounts.map(a => 
+        `<button class="donate-amount-btn ${state.donateAmount === a ? 'active' : ''}" onclick="setDonateAmount(${a})">${a} 🪙</button>`
+      ).join('');
+      
+      document.getElementById('charityMethods').innerHTML = CHARITY_METHODS.map(m => 
+        `<div class="donate-card" onclick="charity('${m.id}')">
+          <div class="donate-icon">${m.icon}</div>
+          <div class="donate-name">${m.name}</div>
+        </div>`
+      ).join('');
+      
+      const hist = state.charityHistory.slice(-5).reverse();
+      document.getElementById('charityHistory').innerHTML = hist.length ? 
+        hist.map(h => `<div class="history-item">${h}</div>`).join('') : 
+        '<div class="history-item" style="color:#52525b;">История пуста</div>';
+    }
+
+    window.setDonateAmount = function(a) {
+      state.donateAmount = a;
+      if (state.donateTab === 'donate') renderDonatePage();
+      else renderCharityPage();
+    };
+
+    window.donate = async function(methodId) {
+      if (!state.username) { openLoginModal(); return; }
+      const method = DONATE_METHODS.find(m => m.id === methodId);
+      const amount = Math.floor(state.donateAmount * method.multiplier);
+      state.coins += amount;
+      state.donateHistory.push(`${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: +${amount} 🪙`);
+      await saveUserData();
+      updateUI();
+      renderDonatePage();
+      showNotification(`💎 ${method.name}: +${amount} 🪙`);
+    };
+
+    window.charity = async function(methodId) {
+      if (!state.username) { openLoginModal(); return; }
+      if (state.coins < state.donateAmount) { showNotification('❌ Недостаточно монет'); return; }
+      const method = CHARITY_METHODS.find(m => m.id === methodId);
+      state.coins -= state.donateAmount;
+      state.charityHistory.push(`${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: -${state.donateAmount} 🪙`);
+      await saveUserData();
+      updateUI();
+      renderCharityPage();
+      showNotification(`🎗️ ${method.message}`);
+    };
+
+    // Старт
+    renderCasesList();
     renderDonatePage();
-    showNotification(`💎 ${method.name}: +${amount} 🪙`);
-  };
-
-  window.charity = async function(methodId){
-    if(!state.username) { openLoginModal(); return; }
-    if(state.coins < state.donateAmount) { showNotification('❌ Недостаточно монет'); return; }
-    const method = CHARITY_METHODS.find(m => m.id === methodId);
-    state.coins -= state.donateAmount;
-    const histEntry = `${new Date().toLocaleTimeString().slice(0,5)} ${method.name}: -${state.donateAmount} 🪙`;
-    state.charityHistory.push(histEntry);
-    await saveUserData();
-    updateUI(); 
-    renderCharityPage();
-    showNotification(`🎗️ ${method.message}`);
-  };
-
-  // Инициализация
-  renderCasesList();
-  renderDonatePage();
-  updateUI();
-  
-  setInterval(() => {
-    document.getElementById('onlineCount').textContent = (94127 + Math.floor(Math.random()*3000)-1000).toLocaleString();
-  }, 1500);
+    updateUI();
+    
+    setInterval(() => {
+      document.getElementById('onlineCount').textContent = (94127 + Math.floor(Math.random()*3000)-1000).toLocaleString();
+    }, 1500);
+  });
 </script>
 </body>
 </html>
